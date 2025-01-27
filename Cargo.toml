@@ -9,3 +9,4 @@ cc = "1.0"
 
 [dev-dependencies]
 serial_test = "0.4.0"
+rustsat = { git = "https://github.com/nfbruns/rustsat.git" }
