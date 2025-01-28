@@ -1,4 +1,4 @@
-use std::{fmt::Debug, iter::once, vec};
+use std::{fmt::Debug, vec};
 
 use rustsat::{
     instances::Cnf,
