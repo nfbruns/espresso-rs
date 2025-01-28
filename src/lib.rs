@@ -3,6 +3,7 @@ use std::mem::MaybeUninit;
 use std::os::raw::{c_char, c_uint, c_void};
 
 use pla::PLA;
+use rustsat::instances::Cnf;
 
 mod pla;
 
@@ -28,6 +29,14 @@ pub fn espresso(pla: PLA) -> PLA {
     unsafe { free(*c_str as *mut c_void) };
 
     PLA::from(result)
+}
+
+pub fn espresso_cnf(cnf: Cnf, max_id: u32) -> Cnf {
+    let pla = PLA::from_cnf(cnf, max_id);
+
+    let result = espresso(pla);
+
+    return result.to_cnf();
 }
 
 #[cfg(test)]
@@ -80,7 +89,7 @@ mod tests {
         let result = espresso(pla);
 
         println!("{:?}", result);
-        assert!(false);
+        //assert!(false);
     }
 
     #[test]
@@ -89,16 +98,16 @@ mod tests {
 
         pla.add_line(
             vec![
+                TernaryVal::DontCare,
+                TernaryVal::False,
+                TernaryVal::DontCare,
                 TernaryVal::True,
-                TernaryVal::DontCare,
-                TernaryVal::DontCare,
-                TernaryVal::DontCare,
             ],
             vec![TernaryVal::True],
         );
         pla.add_line(
             vec![
-                TernaryVal::True,
+                TernaryVal::False,
                 TernaryVal::False,
                 TernaryVal::False,
                 TernaryVal::DontCare,

@@ -1,6 +1,9 @@
-use std::{fmt::Debug, vec};
+use std::{fmt::Debug, iter::once, vec};
 
-use rustsat::{instances::Cnf, types::TernaryVal};
+use rustsat::{
+    instances::Cnf,
+    types::{Clause, Lit, TernaryVal},
+};
 
 struct Lines {
     inputs: Vec<TernaryVal>,
@@ -17,25 +20,6 @@ impl Default for PLA {
 impl PLA {
     pub fn add_line(&mut self, inputs: Vec<TernaryVal>, outputs: Vec<TernaryVal>) {
         self.0.push(Lines { inputs, outputs });
-    }
-}
-
-impl From<Cnf> for PLA {
-    fn from(cnf: Cnf) -> Self {
-        let mut pla = PLA::default();
-        let max = 10;
-
-        for clause in cnf {
-            let mut inputs = vec![TernaryVal::DontCare; max];
-
-            for i in clause {
-                inputs[i.vidx()] = TernaryVal::from(i.is_pos());
-            }
-
-            pla.add_line(inputs, vec![TernaryVal::True]);
-        }
-
-        pla
     }
 }
 
@@ -125,5 +109,66 @@ impl From<PLA> for String {
         }
         result.push_str(".e\n");
         result
+    }
+}
+
+impl PLA {
+    pub fn from_cnf(cnf: Cnf, max_id: u32) -> Self {
+        let mut pla = PLA::default();
+
+        for clause in cnf {
+            let mut inputs = vec![TernaryVal::DontCare; max_id as usize];
+
+            for i in clause {
+                // Inverted because the CNF is optimized invertedly to form a DNF
+                // Therefor the literal is inverted according to DeMorgan's Law
+
+                inputs[i.vidx()] = TernaryVal::from(i.is_neg());
+            }
+
+            pla.add_line(inputs, vec![TernaryVal::True]);
+        }
+
+        pla
+    }
+
+    pub fn to_cnf(&self) -> Cnf {
+        let mut cnf = Cnf::new();
+
+        for line in &self.0 {
+            let mut clause = Clause::new();
+
+            for (i, val) in line.inputs.iter().enumerate() {
+                match val {
+                    TernaryVal::True => clause.add(Lit::negative(i as u32)),
+                    TernaryVal::False => clause.add(Lit::positive(i as u32)),
+                    _ => {}
+                }
+            }
+
+            cnf.add_clause(clause);
+        }
+
+        cnf
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use rustsat::{clause, instances::Cnf, lit};
+
+    use crate::espresso_cnf;
+
+    #[test]
+    fn cnf() {
+        let mut cnf = Cnf::new();
+        cnf.add_clause(clause!(lit![1], lit![2]));
+        cnf.add_clause(clause!(lit![1], lit![3]));
+        cnf.add_clause(clause!(lit![1], lit![4]));
+        cnf.add_clause(clause!(lit![1], lit![5]));
+
+        let opt = espresso_cnf(cnf, 6);
+
+        println!("{:?}", opt);
     }
 }
