@@ -2,7 +2,7 @@ use std::ffi::CStr;
 use std::mem::MaybeUninit;
 use std::os::raw::{c_char, c_uint, c_void};
 
-use pla::PLA;
+pub use pla::PLA;
 use rustsat::instances::Cnf;
 
 mod pla;
