@@ -2,18 +2,24 @@ use std::ffi::CStr;
 use std::mem::MaybeUninit;
 use std::os::raw::{c_char, c_uint, c_void};
 
-pub use pla::PLA;
+use pla_binary::PlaBinary;
 use rustsat::instances::Cnf;
 
+mod item;
+mod itemizer;
+mod multi;
 mod pla;
+mod pla_binary;
+
+use pla::PLA;
 
 extern "C" {
     fn run_espresso_from_data(data: *const c_char, l: c_uint, out: *mut *mut c_char);
     fn free(p: *mut c_void);
 }
 
-pub fn espresso(pla: PLA) -> PLA {
-    let pla_string = String::from(pla);
+pub fn espresso<P: PLA>(pla: P) -> P {
+    let pla_string = pla.to_string();
     let bytes = pla_string.as_bytes();
 
     let mut buf = MaybeUninit::<*mut c_char>::uninit();
@@ -28,11 +34,11 @@ pub fn espresso(pla: PLA) -> PLA {
     let result = unsafe { CStr::from_ptr(*c_str).to_str().unwrap().to_owned() };
     unsafe { free(*c_str as *mut c_void) };
 
-    PLA::from(result)
+    P::from(result)
 }
 
 pub fn espresso_cnf(cnf: Cnf, max_id: u32) -> Cnf {
-    let pla = PLA::from_cnf(cnf, max_id);
+    let pla = PlaBinary::from_cnf(cnf, max_id);
 
     let result = espresso(pla);
 
@@ -43,11 +49,11 @@ pub fn espresso_cnf(cnf: Cnf, max_id: u32) -> Cnf {
 mod tests {
     use rustsat::types::TernaryVal;
 
-    use crate::{espresso, pla::PLA};
+    use crate::{espresso, pla_binary::PlaBinary};
 
     #[test]
     fn test_espresso() {
-        let mut pla = PLA::default();
+        let mut pla = PlaBinary::default();
 
         pla.add_line(
             vec![
@@ -94,7 +100,7 @@ mod tests {
 
     #[test]
     fn test_espresso_2() {
-        let mut pla = PLA::default();
+        let mut pla = PlaBinary::default();
 
         pla.add_line(
             vec![
