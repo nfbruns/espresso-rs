@@ -11,6 +11,7 @@ mod multi;
 mod pla;
 mod pla_binary;
 
+pub use multi::espresso_compress;
 use pla::PLA;
 
 extern "C" {

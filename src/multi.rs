@@ -7,29 +7,14 @@ use std::{
 use ndarray::{Array2, AssignElem, Axis};
 use std::fmt::Write;
 
-use crate::{
-    free,
-    item::Item,
-    itemizer::{self, Itemizer},
-    run_espresso_from_data,
-};
+use crate::{free, item::Item, itemizer::Itemizer, run_espresso_from_data};
 
-pub fn espresso_compress(matrix: Array2<Option<Vec<String>>>) -> Array2<Option<Vec<String>>> {
+pub fn espresso_compress(
+    matrix: &Array2<Option<Vec<String>>>,
+    variables: &Vec<Itemizer<String>>,
+) -> Array2<Option<Vec<String>>> {
     let mut pla_string = String::new();
 
-    let mut variables = Vec::<Itemizer<String>>::new();
-
-    for column in matrix.axis_iter(Axis(1)) {
-        let mut itemizer = Itemizer::new();
-        for i in column {
-            if let Some(i) = i {
-                for x in i {
-                    itemizer.id_of(x);
-                }
-            }
-        }
-        variables.push(itemizer);
-    }
     writeln!(
         pla_string,
         ".mv {} 0 {} 2",
@@ -47,7 +32,7 @@ pub fn espresso_compress(matrix: Array2<Option<Vec<String>>>) -> Array2<Option<V
     writeln!(pla_string, ".type f").unwrap();
 
     for row in matrix.axis_iter(Axis(0)) {
-        for (i, var) in row.iter().zip(&variables) {
+        for (i, var) in row.iter().zip(variables) {
             if let Some(i) = i {
                 let mut s = std::iter::repeat("0")
                     .take(var.len() - 1)
@@ -83,8 +68,6 @@ pub fn espresso_compress(matrix: Array2<Option<Vec<String>>>) -> Array2<Option<V
     let c_str = Box::new(unsafe { buf.assume_init() });
     let result = unsafe { CStr::from_ptr(*c_str).to_str().unwrap().to_owned() };
     unsafe { free(*c_str as *mut c_void) };
-
-    println!("{}", result);
 
     let mut array = MaybeUninit::<Array2<Option<Vec<String>>>>::zeroed();
     let mut row_position = 0;
@@ -129,16 +112,14 @@ pub fn espresso_compress(matrix: Array2<Option<Vec<String>>>) -> Array2<Option<V
         row_position += 1;
     }
 
-    println!("{:?}", array);
-
     unsafe { array.assume_init() }
 }
 
 #[cfg(test)]
 mod test {
-    use ndarray::arr2;
+    use ndarray::{arr2, Axis};
 
-    use crate::multi::espresso_compress;
+    use crate::{itemizer::Itemizer, multi::espresso_compress};
 
     #[test]
     fn test_espresso_compress() {
@@ -165,10 +146,36 @@ mod test {
             ],
         ]);
 
-        let result = espresso_compress(matrix);
+        let mut variables = Vec::<Itemizer<String>>::new();
 
-        println!("{:?}", result);
+        for column in matrix.axis_iter(Axis(1)) {
+            let mut itemizer = Itemizer::new();
+            for i in column {
+                if let Some(i) = i {
+                    for x in i {
+                        itemizer.id_of(x);
+                    }
+                }
+            }
+            variables.push(itemizer);
+        }
 
-        assert!(false);
+        let result = espresso_compress(&matrix, &variables);
+
+        assert_eq!(
+            result,
+            arr2(&[
+                [
+                    Some(vec!["A".to_string()]),
+                    Some(vec!["X".to_string()]),
+                    None
+                ],
+                [
+                    Some(vec!["B".to_string()]),
+                    Some(vec!["Y".to_string()]),
+                    None
+                ],
+            ])
+        );
     }
 }
