@@ -11,6 +11,8 @@ mod multi;
 mod pla;
 mod pla_binary;
 
+pub use item::Item;
+pub use itemizer::Itemizer;
 pub use multi::espresso_compress;
 use pla::PLA;
 
