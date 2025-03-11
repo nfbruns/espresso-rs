@@ -12,4 +12,4 @@ serial_test = "0.4.0"
 rustsat = { git = "https://github.com/nfbruns/rustsat.git" }
 fnv = "1.0.7"
 ndarray = "0.16.1"
-itemizer = "0.1.0"
+itemizer = "1.0.2"

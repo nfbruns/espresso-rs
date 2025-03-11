@@ -57,7 +57,7 @@ pub fn espresso_compress(
                     .take(var.len() - 1)
                     .collect::<String>();
                 for x in i {
-                    let id = var.id_of_exists(x).unwrap().as_index() - 1;
+                    let id = var.id_of_opt(x).unwrap().as_index() - 1;
 
                     s.insert(id, '1');
                 }
