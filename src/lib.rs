@@ -5,15 +5,13 @@ use std::os::raw::{c_char, c_uint, c_void};
 use pla_binary::PlaBinary;
 use rustsat::instances::Cnf;
 
-mod item;
-mod itemizer;
-mod multi;
+mod multi_compress;
+mod multi_reduce;
 mod pla;
 mod pla_binary;
 
-pub use item::Item;
-pub use itemizer::Itemizer;
-pub use multi::espresso_compress;
+pub use multi_compress::espresso_compress;
+pub use multi_reduce::espresso_multi;
 use pla::PLA;
 
 extern "C" {

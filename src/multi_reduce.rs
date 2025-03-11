@@ -4,12 +4,14 @@ use std::{
     os::raw::c_void,
 };
 
+use itemizer::{Item, Itemizer};
 use ndarray::{Array2, AssignElem, Axis};
 use std::fmt::Write;
 
-use crate::{free, item::Item, itemizer::Itemizer, run_espresso_from_data};
+use crate::{free, run_espresso_from_data};
 
-pub fn espresso_compress(
+///
+pub fn espresso_multi(
     matrix: &Array2<Option<Vec<String>>>,
     variables: &Vec<Itemizer<String>>,
 ) -> Array2<Option<Vec<String>>> {
@@ -17,8 +19,8 @@ pub fn espresso_compress(
 
     writeln!(
         pla_string,
-        ".mv {} 0 {} 2",
-        matrix.dim().1 + 1,
+        ".mv {} 0 {}",
+        matrix.dim().1,
         variables
             .iter()
             .map(|x| x.len().to_string())
@@ -27,7 +29,6 @@ pub fn espresso_compress(
     )
     .unwrap();
 
-    writeln!(pla_string, ".ob ON OFF").unwrap();
     writeln!(pla_string, ".p {}", matrix.dim().0).unwrap();
     writeln!(pla_string, ".type f").unwrap();
 
@@ -51,7 +52,7 @@ pub fn espresso_compress(
             write!(pla_string, "|").unwrap();
         }
 
-        writeln!(pla_string, "10").unwrap();
+        writeln!(pla_string, "").unwrap();
     }
 
     writeln!(pla_string, ".e").unwrap();
@@ -92,7 +93,7 @@ pub fn espresso_compress(
             if j >= variables.len() {
                 break;
             }
-            if var.chars().all(|x| x == '1') {
+            if matrix.dim().1 - 1 != j && var.chars().all(|x| x == '1') {
                 continue;
             }
             for (p, c) in var.chars().enumerate() {
@@ -117,9 +118,10 @@ pub fn espresso_compress(
 
 #[cfg(test)]
 mod test {
+    use itemizer::Itemizer;
     use ndarray::{arr2, Axis};
 
-    use crate::{itemizer::Itemizer, multi::espresso_compress};
+    use crate::multi_reduce::espresso_multi;
 
     #[test]
     fn test_espresso_compress() {
@@ -131,11 +133,6 @@ mod test {
             ],
             [
                 Some(vec!["A".to_string()]),
-                Some(vec!["X".to_string()]),
-                Some(vec!["V".to_string()]),
-            ],
-            [
-                Some(vec!["B".to_string()]),
                 Some(vec!["Y".to_string()]),
                 Some(vec!["U".to_string()]),
             ],
@@ -160,20 +157,20 @@ mod test {
             variables.push(itemizer);
         }
 
-        let result = espresso_compress(&matrix, &variables);
+        let result = espresso_multi(&matrix, &variables);
 
         assert_eq!(
             result,
             arr2(&[
                 [
-                    Some(vec!["A".to_string()]),
-                    Some(vec!["X".to_string()]),
-                    None
-                ],
-                [
                     Some(vec!["B".to_string()]),
                     Some(vec!["Y".to_string()]),
-                    None
+                    Some(vec!["V".to_string()]),
+                ],
+                [
+                    Some(vec!["A".to_string()]),
+                    None,
+                    Some(vec!["U".to_string()]),
                 ],
             ])
         );
