@@ -116,9 +116,7 @@ pub fn espresso_compress(
             }
             for (p, c) in var.chars().enumerate() {
                 if c == '1' {
-                    let val = variables[j]
-                        .value_of(&Item::with_id((p + 1) as u32))
-                        .clone();
+                    let val = variables[j].value_of(&Item::with_id(p as u32)).clone();
 
                     if let Some(a) = &mut array[[row_position, j]] {
                         a.push(val);
